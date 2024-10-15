@@ -5,18 +5,43 @@
 
       <template v-for="(answer, index) in this.answers" v-bind:key="index">
         <input
+          :disabled="this.answerSubmitted"
           type="radio"
           name="options"
           :value="answer"
-          v-model="this.chosen_answer"
+          v-model="this.chosenAnswer"
         />
 
         <label v-html="answer"></label><br />
       </template>
 
-      <button @click="this.submitAnswer()" class="send" type="button">
+      <button
+        v-if="!this.answerSubmitted"
+        @click="this.submitAnswer()"
+        class="send"
+        type="button"
+      >
         Confirmar
       </button>
+
+      <section class="result" v-if="this.answerSubmitted">
+        <template v-if="this.chosenAnswer == this.correctAnswer">
+          <h4>
+            &#9989; Parabéns, a resposta "{{ this.correctAnswer }}" está
+            correta.
+          </h4>
+        </template>
+        <template v-else>
+          <h4>
+            &#10060; Que pena, a resposta está errada. A resposta correta é "{{
+              this.correctAnswer
+            }}".
+          </h4>
+        </template>
+        <button @click="this.getNewQuestion()" class="send" type="button">
+          Próxima pergunta
+        </button>
+      </section>
     </template>
   </div>
 </template>
@@ -27,43 +52,59 @@ export default {
 
   data() {
     return {
-      chosen_answer: undefined,
+      chosenAnswer: undefined,
       question: undefined,
       incorrectAnswers: undefined,
       correctAnswer: undefined,
+      answerSubmitted: false,
     };
   },
 
   computed: {
-      answers() {
-        var answers = JSON.parse(JSON.stringify(this.incorrectAnswers));
-        answers.splice(Math.round(Math.random() * answers.length), 0, this.correctAnswer);
-        return answers;
-      }
+    answers() {
+      var answers = JSON.parse(JSON.stringify(this.incorrectAnswers));
+      answers.splice(
+        Math.round(Math.random() * answers.length),
+        0,
+        this.correctAnswer
+      );
+      return answers;
+    },
   },
 
   methods: {
     submitAnswer() {
-      if (!this.chosen_answer) {
+      if (!this.chosenAnswer) {
         alert("Escolha uma das opções");
       } else {
-        if (this.chosen_answer == this.correctAnswer) {
+        this.answerSubmitted = true;
+        if (this.chosenAnswer == this.correctAnswer) {
           alert("Acertou!");
         } else {
           alert("Errou!!");
         }
       }
     },
+
+    getNewQuestion() {
+
+      this.answerSubmitted = false;
+      this.chosenAnswer =undefined;
+      this.question = undefined;
+
+      this.axios
+        .get("https://opentdb.com/api.php?amount=1&category=18")
+        .then((response) => {
+          (this.question = response.data.results[0].question),
+            (this.incorrectAnswers =
+              response.data.results[0].incorrect_answers),
+            (this.correctAnswer = response.data.results[0].correct_answer);
+        });
+    },
   },
 
   created() {
-    this.axios
-      .get("https://opentdb.com/api.php?amount=1&category=18")
-      .then((response) => {
-        this.question = response.data.results[0].question,
-        this.incorrectAnswers = response.data.results[0].incorrect_answers,
-        this.correctAnswer = response.data.results[0].correct_answer
-      });
+    this.getNewQuestion();
   },
 };
 </script>
