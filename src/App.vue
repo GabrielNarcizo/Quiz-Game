@@ -3,13 +3,20 @@
     <template v-if="this.question">
       <h1 v-html="this.question"></h1>
 
-      <template v-for="(answer, index) in this.answers" :key="index">
-        <input type="radio" name="options" value="answer" />
+      <template v-for="(answer, index) in this.answers" v-bind:key="index">
+        <input
+          type="radio"
+          name="options"
+          :value="answer"
+          v-model="this.chosen_answer"
+        />
 
         <label v-html="answer"></label><br />
       </template>
 
-      <button class="send" type="button">Send</button>
+      <button @click="this.submitAnswer()" class="send" type="button">
+        Confirmar
+      </button>
     </template>
   </div>
 </template>
@@ -20,6 +27,7 @@ export default {
 
   data() {
     return {
+      chosen_answer: undefined,
       question: undefined,
       incorrectAnswers: undefined,
       correctAnswer: undefined,
@@ -27,13 +35,24 @@ export default {
   },
 
   computed: {
-    answers() {
-      var answers = [...this.incorrectAnswers];
-      answers.splice(
-        Math.round(Math.random() * answers.length),
-        this.correctAnswer
-      );
-      return answers;
+      answers() {
+        var answers = JSON.parse(JSON.stringify(this.incorrectAnswers));
+        answers.splice(Math.round(Math.random() * answers.length), 0, this.correctAnswer);
+        return answers;
+      }
+  },
+
+  methods: {
+    submitAnswer() {
+      if (!this.chosen_answer) {
+        alert("Escolha uma das opções");
+      } else {
+        if (this.chosen_answer == this.correctAnswer) {
+          alert("Acertou!");
+        } else {
+          alert("Errou!!");
+        }
+      }
     },
   },
 
@@ -41,9 +60,9 @@ export default {
     this.axios
       .get("https://opentdb.com/api.php?amount=1&category=18")
       .then((response) => {
-        this.question = response.data.results[0].question;
-        this.incorrectAnswers = response.data.results[0].incorrect_answers;
-        this.correctAnswers = response.data.results[0].correct_answers;
+        this.question = response.data.results[0].question,
+        this.incorrectAnswers = response.data.results[0].incorrect_answers,
+        this.correctAnswer = response.data.results[0].correct_answer
       });
   },
 };
